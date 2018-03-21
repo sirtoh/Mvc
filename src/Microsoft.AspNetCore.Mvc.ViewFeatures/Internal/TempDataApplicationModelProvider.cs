@@ -2,13 +2,23 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
+using System.Reflection;
 using Microsoft.AspNetCore.Mvc.ApplicationModels;
 using Microsoft.AspNetCore.Mvc.Internal;
+using Microsoft.AspNetCore.Mvc.ViewFeatures.Internal;
+using Microsoft.Extensions.Options;
 
-namespace Microsoft.AspNetCore.Mvc.ViewFeatures.Internal
+namespace Microsoft.AspNetCore.Mvc.ViewFeatures
 {
-    public class TempDataApplicationModelProvider : IApplicationModelProvider
+    internal class TempDataApplicationModelProvider : IApplicationModelProvider
     {
+        private readonly MvcViewOptions _options;
+
+        public TempDataApplicationModelProvider(IOptions<MvcViewOptions> options)
+        {
+            _options = options.Value;
+        }
+
         /// <inheritdoc />
         /// <remarks>This order ensures that <see cref="TempDataApplicationModelProvider"/> runs after the <see cref="DefaultApplicationModelProvider"/>.</remarks>
         public int Order => -1000 + 10;
@@ -26,21 +36,25 @@ namespace Microsoft.AspNetCore.Mvc.ViewFeatures.Internal
                 throw new ArgumentNullException(nameof(context));
             }
 
+            var keyPrefix = _options.SuppressTempDataAttributePrefix ? string.Empty : "TempDataProperty-";
+
             foreach (var controllerModel in context.Result.Controllers)
             {
-
                 var modelType = controllerModel.ControllerType.AsType();
-                var tempDataProperties = SaveTempDataPropertyFilterBase.GetTempDataProperties(modelType);
 
-                if (tempDataProperties != null)
+                var tempDataProperties = LifecycleProperty.GetLifecycleProperties(modelType, typeof(TempDataAttribute), keyPrefix);
+                if (tempDataProperties == null)
                 {
-                    var factory = new ControllerSaveTempDataPropertyFilterFactory()
-                    {
-                        TempDataProperties = tempDataProperties
-                    };
-
-                    controllerModel.Filters.Add(factory);
+                    continue;
                 }
+
+                foreach (var property in tempDataProperties)
+                {
+                    SaveTempDataPropertyFilterBase.ValidateTempDataProperty(property.PropertyInfo);
+                }
+
+                var filter = new ControllerSaveTempDataPropertyFilterFactory(tempDataProperties);
+                controllerModel.Filters.Add(filter);
             }
         }
     }
