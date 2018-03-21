@@ -7,11 +7,10 @@ using System.Reflection;
 
 namespace Microsoft.AspNetCore.Mvc.ApplicationParts
 {
-    /// <summary>
-    /// Configures an assembly as a <see cref="CompiledRazorAssemblyPart"/>.
-    /// </summary>
-    public class CompiledRazorAssemblyApplicationPartFactory : ApplicationPartFactory
+    public class DefaultApplicationPartFactory : ApplicationPartFactory
     {
+        public static DefaultApplicationPartFactory Instance { get; } = new DefaultApplicationPartFactory();
+
         public static IEnumerable<ApplicationPart> GetDefaultApplicationParts(Assembly assembly)
         {
             if (assembly == null)
@@ -19,10 +18,12 @@ namespace Microsoft.AspNetCore.Mvc.ApplicationParts
                 throw new ArgumentNullException(nameof(assembly));
             }
 
-            yield return new CompiledRazorAssemblyPart(assembly);
+            yield return new AssemblyPart(assembly);
         }
 
-        /// <inheritdoc />
-        public override IEnumerable<ApplicationPart> GetApplicationParts(Assembly assembly) => GetDefaultApplicationParts(assembly);
+        public override IEnumerable<ApplicationPart> GetApplicationParts(Assembly assembly)
+        {
+            return GetDefaultApplicationParts(assembly);
+        }
     }
 }
