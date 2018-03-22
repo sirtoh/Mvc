@@ -1216,6 +1216,7 @@ namespace Microsoft.AspNetCore.Mvc.RazorPages.Internal
                 selector.Object,
                 diagnosticListener ?? new DiagnosticListener("Microsoft.AspNetCore"),
                 logger ?? NullLogger.Instance,
+                new ActionResultTypeMapper(),
                 pageContext,
                 filters ?? Array.Empty<IFilterMetadata>(),
                 cacheEntry,
